@@ -253,6 +253,105 @@
       end subroutine trapezoidInt2D
 
 !
+!PROCEDURE pibFlags
+      subroutine pibFlags(Mode,integerFlags,realFlags,n1,n2,n3,n4,mass,  &
+        boxLength)
+!
+!     This subroutine is used to manipulate the integerFlags and realFlags
+!     arrays that are used in function arguments to integration and other
+!     polymorphic code in PIB models codes.
+!
+!     Note that dummy argument Mode is a standard Fortran integer type to allow
+!     for calls to this subroutine with the first argument given by an actual
+!     integer in-line.
+!
+!     The integer and real arrays are for PIB related functions that assume
+!     three key things for the calculations they support (using this code
+!     infrastructure): (1) the use of standard particle in a box eigen functions
+!     as basis functions; (2) that all particles have the same mass; and (3)
+!     that all particles are in the same size box and experience the same
+!     potential.
+!
+!     There are three modes allowed in the dummy arugment Mode:
+!           0 ... Initialize the integerFlags and realFlags arrays. This
+!                 involves ensuring they have the current set array lengths and
+!                 that all values are initialized to zero.
+!           1 ... Write one or more values to the integerFlags and/or realFlags
+!                 arrays. Which elements is(are) written is controled by which
+!                 OPTIONAL dummy arguments is(are) sent to the routine.
+!           2 ... Read one or more values from the integerFlags and/or realFlags
+!                 arrays. Which element(s) is(are) read is controled by which
+!                 OPTIONAL dummy argument(s) is(are) sent to the routine.
+!
+!     The elements of integerFlags are:
+!         1-9 ... RESERVED for flags regarding the potential and other options
+!                 related to the model system being studied.
+!          10 ... n1, The quantum number of the first PIB eigen-function
+!                 included in function evaluations. The function associated with
+!                 n1 is taken to be a function of the first particle coordinate.
+!          20 ... n2, The quantum number of the second PIB eigen-function
+!                 included in function evaluations. The function associated with
+!                 n2 is taken to be a function of the first particle coordinate.
+!       21-29 ... RESERVED for flags regarding the first function associated
+!                 with the first particle.
+!          30 ... n3, The quantum number of the third PIB eigen-function
+!                 included in function evaluations. The function associated with
+!                 n3 is taken to be a function of the second particle coordinate.
+!       31-39 ... RESERVED for flags regarding the first function associated
+!                 with the first particle.
+!          40 ... n4, The quantum number of the fourth PIB eigen-function
+!                 included in function evaluations. The function associated with
+!                 n4 is taken to be a function of the second particle coordinate.
+!       41-99 ... RESERVED for flags regarding the first function associated
+!                 with the first particle.
+!
+!     The elements of realFlags are:
+!           1 ... The box length in a.u.
+!           2 ... The box particle mass in a.u.
+!        3-99 ... RESERVED for flags regarding the first function associated
+!                 with the first particle.
+!
+!
+!
+      implicit none
+      integer::Mode
+      integer(kind=int64),dimension(:),allocatable,intent(inOut)::integerFlags
+      real(kind=real64),dimension(:),allocatable,intent(inOut)::realFlags
+      integer(kind=int64),OPTIONAL,intent(inOut)::n1,n2,n3,n4
+      real(kind=real64),OPTIONAL,intent(inOut)::mass,boxLength
+!
+!     Based on the value of Mode, do the requested work.
+!
+      select case(Mode)
+      case(0)
+        if(Allocated(integerFlags)) DeAllocate(integerFlags)
+        if(Allocated(realFlags)) DeAllocate(realFlags)
+        Allocate(integerFlags(99),realFlags(99))
+        integerFlags = 0_int64
+        realFlags = 0.0_real64
+      case(1)
+        if(PRESENT(n1))        integerFlags(10) = n1
+        if(PRESENT(n2))        integerFlags(20) = n2
+        if(PRESENT(n3))        integerFlags(30) = n3
+        if(PRESENT(n4))        integerFlags(40) = n4
+        if(PRESENT(boxLength)) realFlags(1)     = boxLength
+        if(PRESENT(mass))      realFlags(2)     = mass
+      case(2)
+        if(PRESENT(n1))        n1        = integerFlags(10)
+        if(PRESENT(n2))        n2        = integerFlags(20)
+        if(PRESENT(n3))        n3        = integerFlags(30)
+        if(PRESENT(n4))        n4        = integerFlags(40)
+        if(PRESENT(boxLength)) boxLength = realFlags(1)
+        if(PRESENT(mass))      mass      = realFlags(2)
+      case default
+        write(*,*)' WARNING: Unknown MODE sent to pibFlags.'
+      end select
+!
+      return
+      end subroutine pibFlags
+
+
+!
 !PROCEDURE pib2DIntegrandWrapper
       function pib2DIntegrandWrapper(coordinates,integerFlags,realFlags)  &
         result(valueIntegrand)
